@@ -25,6 +25,7 @@ class SDDB_Frontend {
 				'methods'             => 'GET',
 				'permission_callback' => '__return_true',
 				'args'                => array(
+					'v'   => array( 'required' => false ),
 					'ids' => array(
 						'required'          => true,
 						'sanitize_callback' => function ( $v ) {
@@ -126,6 +127,7 @@ class SDDB_Frontend {
 			array(
 				'endpoint'    => esc_url_raw( rest_url( 'sddb/v1/blanks' ) ),
 				'placeholder' => __( 'Select…', 'seru-dropdown-blanks' ),
+				'version'     => SDDB_VERSION,
 			)
 		);
 		wp_enqueue_style( 'sddb-dropdown-blanks', SDDB_URL . 'dropdown-blanks.css', array(), SDDB_VERSION );

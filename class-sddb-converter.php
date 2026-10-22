@@ -189,4 +189,61 @@ class SDDB_Converter {
 		// Backup is kept on purpose (harmless, and useful for audits).
 		return true;
 	}
+
+	/**
+	 * Read-only check of a converted question: LearnDash data vs. the original data.
+	 *
+	 * @param int $post_id Question post id.
+	 * @return array{ok:bool, problems:string[], blanks:int, answers:string[]}
+	 */
+	public static function verify( $post_id ) {
+		$out    = array( 'ok' => false, 'problems' => array(), 'blanks' => 0, 'answers' => array() );
+		$pro_id = (int) get_post_meta( $post_id, 'question_pro_id', true );
+		if ( ! class_exists( 'WpProQuiz_Model_QuestionMapper' ) ) {
+			$out['problems'][] = 'LearnDash not active.';
+			return $out;
+		}
+		$mapper   = new WpProQuiz_Model_QuestionMapper();
+		$question = $mapper->fetch( $pro_id );
+		if ( ! $question || ! $question->getId() ) {
+			$out['problems'][] = 'LearnDash question row ' . $pro_id . ' not found.';
+			return $out;
+		}
+		if ( self::NEW_TYPE !== $question->getAnswerType() ) {
+			$out['problems'][] = 'Type is ' . $question->getAnswerType() . ', expected ' . self::NEW_TYPE . '.';
+		}
+		$data  = $question->getAnswerData();
+		$cloze = ( is_array( $data ) && isset( $data[0] ) && is_object( $data[0] ) ) ? (string) $data[0]->getAnswer() : '';
+		if ( '' === $cloze ) {
+			$out['problems'][] = 'No cloze text stored.';
+			return $out;
+		}
+		$expected = SDDB_Transform::build(
+			get_post_meta( $post_id, '_ld_advanced_jumbled_question', true ),
+			get_post_meta( $post_id, '_ld_advanced_jumbled_options', true )
+		);
+		if ( $expected['ok'] && $expected['cloze'] !== $cloze ) {
+			$out['problems'][] = 'Stored text differs from the original passage.';
+		}
+		preg_match_all( '/\{\[([^\]]*)\](?:\|[0-9.]+)?\}/', $cloze, $m );
+		$answers        = $m[1];
+		$out['blanks']  = count( $answers );
+		$out['answers'] = $answers;
+		$cfg            = get_post_meta( $post_id, self::META_BLANKS, true );
+		$blanks         = isset( $cfg['blanks'] ) ? $cfg['blanks'] : array();
+		if ( count( $blanks ) !== count( $answers ) ) {
+			$out['problems'][] = 'Dropdowns (' . count( $blanks ) . ') and blanks (' . count( $answers ) . ') differ.';
+		}
+		foreach ( $answers as $i => $ans ) {
+			$vals = isset( $blanks[ $i ]['vals'] ) ? array_filter( (array) $blanks[ $i ]['vals'], function ( $v ) { return ! SDDB_Transform::is_placeholder( $v ); } ) : array();
+			if ( ! in_array( $ans, $vals, true ) ) {
+				$out['problems'][] = 'Blank ' . ( $i + 1 ) . ': correct answer "' . $ans . '" is not in its dropdown.';
+			}
+			if ( SDDB_Transform::is_placeholder( $ans ) ) {
+				$out['problems'][] = 'Blank ' . ( $i + 1 ) . ': correct answer is a placeholder.';
+			}
+		}
+		$out['ok'] = empty( $out['problems'] );
+		return $out;
+	}
 }

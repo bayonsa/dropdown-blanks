@@ -158,22 +158,38 @@ class SDDB_Admin {
 			<?php endif; ?>
 
 			<h2 style="margin-top:2em">Converted</h2>
+			<p id="sddb-verify-summary"></p>
 			<?php if ( ! $converted ) : ?>
 				<p>None yet.</p>
 			<?php else : ?>
 			<table class="widefat striped">
-				<thead><tr><th style="width:60px">ID</th><th>Question</th><th style="width:160px">Converted</th><th style="width:120px"></th></tr></thead>
+				<thead><tr><th style="width:60px">ID</th><th>Question</th><th>Check (correct answers)</th><th style="width:160px">Converted</th><th style="width:120px"></th></tr></thead>
 				<tbody>
-				<?php foreach ( $converted as $qid ) : ?>
-					<tr>
+				<?php
+				$bad = 0;
+				foreach ( $converted as $qid ) :
+					$v = SDDB_Converter::verify( $qid );
+					if ( ! $v['ok'] ) {
+						$bad++;
+					}
+					?>
+					<tr class="sddb-verify <?php echo $v['ok'] ? 'sddb-ok' : 'sddb-bad'; ?>">
 						<td><?php echo (int) $qid; ?></td>
 						<td><a href="<?php echo esc_url( get_edit_post_link( $qid ) ); ?>"><?php echo esc_html( get_the_title( $qid ) ); ?></a></td>
+						<td>
+							<?php if ( $v['ok'] ) : ?>
+								<span style="color:#008a20">✓</span> <?php echo esc_html( implode( ' · ', $v['answers'] ) ); ?>
+							<?php else : ?>
+								<span style="color:#b32d2e"><?php echo esc_html( implode( ' ', $v['problems'] ) ); ?></span>
+							<?php endif; ?>
+						</td>
 						<td><?php echo esc_html( wp_date( 'Y-m-d H:i', (int) get_post_meta( $qid, SDDB_Converter::META_FLAG, true ) ) ); ?></td>
 						<td><a class="button button-small" href="<?php echo esc_url( self::action_url( 'revert', $qid ) ); ?>">Revert</a></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>
+			<script>document.getElementById('sddb-verify-summary').innerHTML = <?php echo wp_json_encode( '<strong>' . ( count( $converted ) - $bad ) . '</strong> passed check · <strong>' . $bad . '</strong> with problems' ); ?>;</script>
 			<?php endif; ?>
 		</div>
 		<?php

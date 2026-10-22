@@ -95,7 +95,7 @@
 		if (!need.length) { return; }
 		for (var k = 0; k < need.length; k += 100) {
 			(function (chunk) {
-				$.getJSON(SDDB.endpoint, { ids: chunk.join(',') }).done(function (data) {
+				$.getJSON(SDDB.endpoint, { ids: chunk.join(','), v: SDDB.version }).done(function (data) {
 					$.each(data || {}, function (id, cfg) { cache[id] = cfg; });
 					scan(document);
 				});
