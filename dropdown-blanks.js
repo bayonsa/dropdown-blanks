@@ -48,7 +48,8 @@
 
 			var ph = document.createElement('option');
 			ph.value = '';
-			ph.textContent = cfg.blank_first ? '' : SDDB.placeholder;
+			var phText = (cfg.placeholders && cfg.placeholders[i]) ? cfg.placeholders[i] : SDDB.placeholder;
+			ph.textContent = cfg.blank_first ? '' : phText;
 			ph.disabled = !cfg.blank_first;
 			ph.selected = true;
 			sel.appendChild(ph);

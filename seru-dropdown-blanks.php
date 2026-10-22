@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       SERU Dropdown Blanks
  * Description:       Dropdown fill-in-the-blank questions for LearnDash. Converts the old "Jumbled Sentence" questions to LearnDash's own Fill in the blank type (with backup and revert) and shows every blank as a dropdown.
- * Version:           0.1.0
+ * Version:           0.1.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Borun Studios
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SDDB_VERSION', '0.1.0' );
+define( 'SDDB_VERSION', '0.1.2' );
 define( 'SDDB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SDDB_URL', plugin_dir_url( __FILE__ ) );
 

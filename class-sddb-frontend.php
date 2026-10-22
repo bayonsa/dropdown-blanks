@@ -79,7 +79,29 @@ class SDDB_Frontend {
 				'blank_first' => ! empty( $cfg['blank_first'] ),
 				'blanks'      => array_map(
 					function ( $b ) {
-						return array_values( (array) $b['vals'] );
+						// Strip placeholders also for questions converted by older versions.
+						return array_values(
+							array_filter(
+								(array) $b['vals'],
+								function ( $v ) {
+									return ! SDDB_Transform::is_placeholder( $v );
+								}
+							)
+						);
+					},
+					$cfg['blanks']
+				),
+				'placeholders' => array_map(
+					function ( $b ) {
+						if ( ! empty( $b['placeholder'] ) ) {
+							return $b['placeholder'];
+						}
+						foreach ( (array) $b['vals'] as $v ) {
+							if ( SDDB_Transform::is_placeholder( $v ) ) {
+								return $v;
+							}
+						}
+						return '';
 					},
 					$cfg['blanks']
 				),

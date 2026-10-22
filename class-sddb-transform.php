@@ -50,15 +50,52 @@ class SDDB_Transform {
 					}
 				}
 			}
+			// The old add-on stored a placeholder such as "choose answer" as a real option.
+			$placeholder = '';
+			$vals        = array_values(
+				array_filter(
+					$vals,
+					function ( $v ) use ( &$placeholder ) {
+						if ( self::is_placeholder( $v ) ) {
+							if ( '' === $placeholder ) {
+								$placeholder = $v;
+							}
+							return false;
+						}
+						return true;
+					}
+				)
+			);
+			$correct = isset( $opt['correct'] ) ? trim( (string) $opt['correct'] ) : '';
+			// Data typo seen in practice: "conflict|conflict". Collapse identical alternatives.
+			if ( false !== strpos( $correct, '|' ) ) {
+				$parts = array_values( array_unique( array_filter( array_map( 'trim', explode( '|', $correct ) ), 'strlen' ) ) );
+				if ( 1 === count( $parts ) ) {
+					$correct = $parts[0];
+				}
+			}
 			$map[ $code ] = array(
 				'code'               => $code,
 				'vals'               => array_values( array_unique( $vals ) ),
-				'correct'            => isset( $opt['correct'] ) ? trim( (string) $opt['correct'] ) : '',
+				'placeholder'        => $placeholder,
+				'correct'            => $correct,
 				'points'             => isset( $opt['points'] ) ? (float) $opt['points'] : 0.0,
 				'pts_for_each_usage' => ( isset( $opt['pts_for_each_usage'] ) && 'yes' === $opt['pts_for_each_usage'] ) ? 'yes' : 'no',
 			);
 		}
 		return $map;
+	}
+
+	/**
+	 * Is this option text a "please choose" placeholder rather than an answer?
+	 *
+	 * @param string $v Option text.
+	 * @return bool
+	 */
+	public static function is_placeholder( $v ) {
+		$v = (string) $v;
+		return (bool) preg_match( '/^\s*-*\s*(please\s+)?(choose|select)\s+(an?\s+|the\s+|your\s+)?(answer|option|word|one)\s*-*\s*\.{0,3}\s*$/i', $v )
+			|| (bool) preg_match( '/^\s*-+\s*(please\s+)?(choose|select)\s*\.{0,3}\s*-+\s*$/i', $v );
 	}
 
 	/**
@@ -127,16 +164,17 @@ class SDDB_Transform {
 				if ( false !== strpos( $opt['correct'], '[' ) || false !== strpos( $opt['correct'], ']' )
 					|| false !== strpos( $opt['correct'], '{' ) || false !== strpos( $opt['correct'], '}' )
 					|| false !== strpos( $opt['correct'], '|' ) ) {
-					$errors[] = 'Correct answer for [' . $opt['code'] . '] contains reserved characters ([ ] { } |).';
+					$errors[] = 'Correct answer for [' . $opt['code'] . '] ("' . $opt['correct'] . '") contains reserved characters ([ ] { } |).';
 				}
 				$pts = $opt['points'] > 0 ? $opt['points'] : 0;
 				if ( $pts > 0 && 'yes' === $opt['pts_for_each_usage'] && ! empty( $usage[ $opt['code'] ] ) ) {
 					$pts = $pts / $usage[ $opt['code'] ];
 				}
 				$blanks[] = array(
-					'code'   => $opt['code'],
-					'vals'   => array_values( $opt['vals'] ),
-					'points' => $pts,
+					'code'        => $opt['code'],
+					'vals'        => array_values( $opt['vals'] ),
+					'points'      => $pts,
+					'placeholder' => $opt['placeholder'],
 				);
 				$pts_str = $pts > 0 ? '|' . rtrim( rtrim( number_format( $pts, 2, '.', '' ), '0' ), '.' ) : '';
 				return '{[' . $opt['correct'] . ']' . $pts_str . '}';
@@ -150,7 +188,8 @@ class SDDB_Transform {
 				$result['warnings'][] = 'Option [' . $c . '] is defined but never used in the passage.';
 			}
 		}
-		if ( preg_match_all( '/\[([A-Za-z0-9_\-]{1,20})\]/', $cloze, $left ) && ! empty( $left[1] ) ) {
+		$without_blanks = preg_replace( '/\{\[[^\]]*\](?:\|[0-9.]+)?\}/', '', $cloze );
+		if ( preg_match_all( '/\[([A-Za-z0-9_\-]{1,20})\]/', $without_blanks, $left ) && ! empty( $left[1] ) ) {
 			$result['warnings'][] = 'Unmatched tokens left in passage: [' . implode( '], [', array_unique( $left[1] ) ) . ']';
 		}
 		if ( empty( $blanks ) ) {

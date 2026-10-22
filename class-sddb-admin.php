@@ -77,7 +77,7 @@ class SDDB_Admin {
 	}
 
 	private static function highlight( $cloze ) {
-		return preg_replace( '/\{\[([^\]]*)\](?:\|[0-9.]+)?\}/', '<mark>$1</mark>', esc_html( $cloze ) );
+		return preg_replace( '/\{\[([^\]]*)\](?:\|[0-9.]+)?\}/', '<mark>$1</mark>', wp_kses_post( $cloze ) );
 	}
 
 	public static function render() {
