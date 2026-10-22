@@ -1,0 +1,31 @@
+/* SERU Dropdown Blanks */
+.wpProQuiz_cloze .sddb-hidden-input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+.wpProQuiz_cloze .sddb-select {
+	display: inline-block;
+	max-width: 100%;
+	min-width: 8em;
+	margin: 2px 4px;
+	padding: 4px 28px 4px 8px;
+	font: inherit;
+	line-height: 1.4;
+	border: 1px solid #b8c2cc;
+	border-radius: 6px;
+	background-color: #fff;
+	vertical-align: baseline;
+}
+.wpProQuiz_cloze .sddb-select:focus {
+	outline: 2px solid #2659f0;
+	outline-offset: 1px;
+}
+.wpProQuiz_cloze .sddb-select:disabled {
+	opacity: 1;
+	background-color: #f3f5f8;
+}
